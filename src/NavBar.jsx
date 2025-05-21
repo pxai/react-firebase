@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react'
-import './App.css'
+import { Link } from "react-router-dom";
 import GoogleLogin from './GoogleLogin'
 import AuthStatus from './AuthStatus'
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import Logout from './Logout'
-import AddStageForm from './AddStageForm';
-import MyStagesList from './MyStageList';
-import Game from './Game';
 
-function HomePage() {
-  const [count, setCount] = useState(0)
+function NavBar () {
   const [user, setUser] = useState(null)
 
   useEffect(() => {
@@ -22,16 +18,14 @@ function HomePage() {
   }, []);
 
   return (
-    <>
-      <Game />
-      <div className="card">
-        {user && <AddStageForm />}
-      </div>
-      <div className="read-the-docs">
-        <MyStagesList />
-      </div>
-    </>
+    <nav style={{ marginBottom: "1rem" }}>
+      <Link to="/">Home</Link> | <Link to="/about">About</Link>
+        { !user
+          ? <GoogleLogin className="link-style"/>
+          : <><AuthStatus className="link-style"/> | <Logout className="link-style"/></>
+        }
+    </nav>
   )
 }
 
-export default HomePage
+export default NavBar;

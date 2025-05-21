@@ -1,14 +1,13 @@
 import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import HomePage from "./HomePage";
 import AboutPage from "./AboutPage";
+import NavBar from "./NavBar";
 
 function App() {
   return (
-    <div>
-      <nav style={{ marginBottom: "1rem" }}>
-        <Link to="/">Home</Link> | <Link to="/about">About</Link>
-      </nav>
+    <div className="top-bar">
+      <NavBar />
 
       <Routes>
         <Route path="/" element={<HomePage />} />

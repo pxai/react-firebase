@@ -6,8 +6,8 @@ export default function Game() {
       <iframe
         src="/game/index.html"
         title="txokas game"
-        width="800px"
-        height="600px"
+        width="1000px"
+        height="800px"
         style={{ border: 'none' }}
       />
     </div>
