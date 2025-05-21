@@ -15,7 +15,7 @@
   "chromium-args": "--data-path='./saves/' --in-process-gpu --disable-transparency",
   "scripts": {
     "start": "vite",
-    "build": "vite build",
+    "build": "vite build && cp -rfp assets/* ../public/game/assets/",
     "preview": "vite preview",
     "lint": "eslint src/**/*.js test/**/*.js --fix",
     "unit": "mocha test --recursive --require @babel/register -r jsdom-global/register --file test/test_setup.js",
@@ -43,7 +43,8 @@
     "jsdom-global": "^3.0.2",
     "mocha": "^8.2.1",
     "path": "^0.12.7",
-    "vite": "^6.2.2"
+    "vite": "^6.2.2",
+    "vite-plugin-static-copy": "^3.0.0"
   },
   "repository": {
     "url": "https://github.com/pxai/phaserbook"

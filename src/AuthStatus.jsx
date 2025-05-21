@@ -9,7 +9,7 @@ function AuthStatus() {
     return onAuthStateChanged(auth, setUser);
   }, []);
 
-  return <div>{user ? `Logged in as ${user.email}` : 'Not logged in'}</div>;
+  return <span>{user ? `Logged in as ${user.email}` : 'Not logged in'}</span>;
 }
 
 export default AuthStatus;

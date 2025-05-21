@@ -18,11 +18,11 @@ function NavBar () {
   }, []);
 
   return (
-    <nav style={{ marginBottom: "1rem" }}>
-      <Link to="/">Home</Link> | <Link to="/about">About</Link>
+    <nav className="top-bar">
+      <Link to="/">XOKAS</Link> | <Link to="/about">About</Link> |&nbsp;
         { !user
-          ? <GoogleLogin className="link-style"/>
-          : <><AuthStatus className="link-style"/> | <Logout className="link-style"/></>
+          ? <GoogleLogin />
+          : <><AuthStatus /> | <Logout /></>
         }
     </nav>
   )

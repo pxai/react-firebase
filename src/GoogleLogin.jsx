@@ -14,7 +14,7 @@ function GoogleLogin() {
     }
   };
 
-  return <button onClick={handleLogin}>Sign in with Google</button>;
+  return <span className="link-style" onClick={handleLogin}>Sign in with Google</span>;
 }
 
 export default GoogleLogin;

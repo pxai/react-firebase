@@ -7,7 +7,6 @@ function Login() {
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      alert('Logged in!');
     } catch (error) {
       alert(error.message);
     }
