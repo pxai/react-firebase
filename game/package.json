@@ -1,0 +1,58 @@
+{
+  "name": "txokas",
+  "productName": "Txokas game",
+  "main": "index.html",
+  "window": {
+    "title": "Txokas - by Pello and Josu",
+    "width": 800,
+    "height": 600,
+    "fullscreen": false,
+    "toolbar": false,
+    "icon": "customIcon.png"
+  },
+  "version": "0.0.1",
+  "description": "Generic game for jam",
+  "chromium-args": "--data-path='./saves/' --in-process-gpu --disable-transparency",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/**/*.js test/**/*.js --fix",
+    "unit": "mocha test --recursive --require @babel/register -r jsdom-global/register --file test/test_setup.js",
+    "publish": "npm run-script build && npm run-script itchio",
+    "itchio": "cd dist && rm -f assets/html/index.html && butler push . pello/lucky-shot:html --userversion 0.0.4 && cd .. && butler status pello/lucky-shot:html"
+  },
+  "dependencies": {
+    "phaser": "^3.52.0",
+    "phaser-matter-collision-plugin": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.3",
+    "@babel/plugin-transform-runtime": "^7.12.1",
+    "@babel/preset-env": "^7.12.7",
+    "@babel/register": "^7.12.10",
+    "babel-loader": "^8.2.2",
+    "canvas": "^2.6.1",
+    "chai": "^4.2.0",
+    "eslint": "^7.18.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "jsdom": "^16.4.0",
+    "jsdom-global": "^3.0.2",
+    "mocha": "^8.2.1",
+    "path": "^0.12.7",
+    "vite": "^6.2.2"
+  },
+  "repository": {
+    "url": "https://github.com/pxai/phaserbook"
+  },
+  "license": "MIT",
+  "keywords": [
+    "phaser",
+    "games",
+    "book",
+    "pello"
+  ]
+}
