@@ -19,7 +19,7 @@ function NavBar () {
 
   return (
     <nav className="top-bar">
-      <Link to="/">XOKAS</Link> | <Link to="/about">About</Link> |&nbsp;
+      <div><Link to="/">TXOKAS.com</Link></div>
         { !user
           ? <GoogleLogin />
           : <><AuthStatus /> | <Logout /></>
