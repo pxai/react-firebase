@@ -4,11 +4,7 @@ class CustomBrick extends Phaser.GameObjects.Sprite {
         this.scene = scene;
         this.name = name;
         this.setOrigin(0)
-        this.setScale(0.5)
         this.scene.add.existing(this);
-        this.scene.physics.add.existing(this);
-        this.body.immovable = true;
-        this.body.moves = false;
         this.isDestroyed = false;
         this.setListeners();
      }
@@ -17,7 +13,14 @@ class CustomBrick extends Phaser.GameObjects.Sprite {
         this.setInteractive();
       this.on("pointerdown", (pointer) => {
         this.scene.onABuiltBlock = true;
-        if (this.scene.currentBlockSprite) this.scene.currentBlockSprite.visible = false;
+        if (this.scene.currentBlockSprite) {
+          this.scene.currentBlockSprite.visible = false;
+
+          if (this.scene.currentBlockSprite.texture.key === "fireball") {
+            this.scene.ball.destroy()
+            this.scene.ball = null
+          }
+        }
         this.remove();
       });
 
@@ -28,7 +31,6 @@ class CustomBrick extends Phaser.GameObjects.Sprite {
       });
 
       this.on("pointerout", () => {
-
           this.clearTint();
           this.scene.onABuiltBlock = false;
         if (this.scene.currentBlockSprite) this.scene.currentBlockSprite.visible = true;
@@ -36,8 +38,7 @@ class CustomBrick extends Phaser.GameObjects.Sprite {
     }
 
     remove () {
-        this.scene.playAudioRandomly("stone")
-        this.scene.recoverCoins(this.name);
+        //this.scene.playAudioRandomly("stone") // TODO
         this.scene.onABuiltBlock = false;
         this.scene.buildTime = 0;
         const {x, y} = this;

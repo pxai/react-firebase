@@ -13,14 +13,14 @@ export default class Ball {
         this.spring = this.scene.matter.add.spring(this.body1, this.fireball, 40, 0.01);
         this.springSprite = scene.add.sprite((this.body1.x + this.fireball.x) / 2, (this.body1.y + this.fireball.y) / 2, "rotator");
 
-       this.scene.matter.add.mouseSpring();
+       this.mouseSpring = this.scene.matter.add.mouseSpring();
 
-       this.readyToFire = false;
-       this.firing = false;
-       this.dead = false;
-       this.scene.events.on("update", this.update, this);
-       this.showSpring = false;
-       this.scene.time.delayedCall(100, () => {this.showSpring = true}, null, this)
+        this.readyToFire = false;
+        this.firing = false;
+        this.dead = false;
+        this.scene.events.on("update", this.update, this);
+        this.showSpring = false;
+        this.scene.time.delayedCall(100, () => {this.showSpring = true}, null, this)
         this.init();
         this.setDrag()
     }
@@ -89,7 +89,9 @@ export default class Ball {
             this.scene.matter.world.remove(this.body1)
             if (this.graphics) this.graphics.destroy()
             this.scene.time.delayedCall(100, () => {this.scene.matter.world.remove(this.spring)}, null, this)
-            this.scene.time.delayedCall(3000, () => {this.scene.restartScene()}, null, this)
+            this.scene.time.delayedCall(3000, () => {
+                this.scene.restartScene()
+            }, null, this)
         }
 
         this.renderDebug()
@@ -120,6 +122,16 @@ export default class Ball {
     death () {
         this.fireball.visible = false;
         this.dead = true;
+    }
+
+    destroy () {
+        this.dead= true
+        this.scene.matter.world.remove(this.spring);
+        this.graphics?.destroy();
+        this.springSprite.destroy();
+        this.scene.matter.world.remove(this.mouseSpring.constraint);
+        this.scene.matter.world.remove(this.body1)
+        this?.fireball.destroy()
     }
 }
 

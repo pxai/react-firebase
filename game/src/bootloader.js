@@ -41,12 +41,20 @@ export default class Bootloader extends Phaser.Scene {
         this.load.bitmapFont("title", "assets/fonts/title.png", "assets/fonts/title.xml");
         this.load.image("map", "assets/maps/map.png");
         this.load.spritesheet("bat", "assets/images/bat.png", { frameWidth: 32, frameHeight: 32 });
-
+        this.load.image("play", "assets/images/play.png");
+        this.load.image("save", "assets/images/save.png");
 
         Array(8).fill(0).forEach((_,i) => {
             this.load.tilemapTiledJSON(`scene${i}`,`assets/maps/scene${i}.json`)
         });
 
+        Array(4).fill(0).forEach((_,i) => {
+            this.load.image(`brick${i}`,`assets/images/brick${i}.png`)
+        });
+
+        Array(4).fill(0).forEach((_,i) => {
+            this.load.image(`spike${i}`,`assets/images/spike${i}.png`)
+        });
 
         this.registry.set("tries", 0);
     }

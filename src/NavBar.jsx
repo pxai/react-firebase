@@ -22,7 +22,7 @@ function NavBar () {
       <div><Link to="/">TXOKAS.com</Link></div>
         { !user
           ? <GoogleLogin />
-          : <><AuthStatus /> | <Logout /></>
+          : <><AuthStatus /> | <Link to="/build">Build</Link><Logout /></>
         }
     </nav>
   )

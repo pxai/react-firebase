@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "./firebase";
 
-function EditStageForm({ stageId, onUpdated }) {
-  const [stageData, setStageData] = useState({ name: "", description: "" });
+function EditStageForm({ stageId, onUpdated, mapData }) {
+  const [stageData, setStageData] = useState({ name: "", description: "", mapData });
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
@@ -32,6 +32,7 @@ function EditStageForm({ stageId, onUpdated }) {
         setStageData({
           name: data.name || "",
           description: data.description || "",
+          mapData: data.mapData || ""
         });
 
         setStatus("");
@@ -60,6 +61,7 @@ function EditStageForm({ stageId, onUpdated }) {
       await updateDoc(doc(db, "stages", stageId), {
         name: stageData.name,
         description: stageData.description,
+        mapData: stageData.description,
       });
       setStatus("Stage updated.");
       if (onUpdated) onUpdated(); // Optional callback
