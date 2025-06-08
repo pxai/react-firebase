@@ -2,6 +2,7 @@ import Ball from './ball';
 import Exit from './exit';
 import Bat from './bat';
 import Rotator from './rotator';
+import SpriteButton from "./sprite_button";
 
 export default class Game extends Phaser.Scene {
     constructor () {
@@ -69,7 +70,12 @@ export default class Game extends Phaser.Scene {
       }
   }
 
+  addBackButton () {
+    this.startButton = new SpriteButton(this, 0, 0, "back", "Go back", this.goBack.bind(this));
+  }
+
   addObjectsFromCustomBricks() {
+
     this.customBricks.forEach(createObject => {
       const { x, y, width, height, name } = createObject;
 
@@ -91,13 +97,8 @@ export default class Game extends Phaser.Scene {
         const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
         const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
 
-                // Debug logs
-        console.log("groundLayer:", this.groundLayer);
-        console.log("tileX, tileY:", tileX, tileY);
-
         const tileset = this.map.tilesets[0];
-        const tileIndex = tileset.firstgid; // Use first tile from the tileset
-        console.log("Using tile index:", tileIndex);
+        const tileIndex = tileset.firstgid + (spriteIndex ); // Use first tile from the tileset
 
         this.map.putTileAt(tileIndex, tileX, tileY, false, this.groundLayer);
       }
@@ -107,13 +108,8 @@ export default class Game extends Phaser.Scene {
         const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
         const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
 
-                // Debug logs
-        console.log("damage:", this.damage);
-        console.log("tileX, tileY:", tileX, tileY, spriteIndex);
-
         const tileset = this.map.tilesets[0];
-        const tileIndex = tileset.firstgid; // Use first tile from the tileset
-        console.log("Using tile index:", tileset,  tileIndex);
+        const tileIndex = tileset.firstgid + (spriteIndex ); // Use first tile from the tileset plus the sprite index
 
         this.map.putTileAt(tileIndex, tileX, tileY, false, this.damage);
       }
@@ -127,6 +123,7 @@ export default class Game extends Phaser.Scene {
     this.matter.world.convertTilemapLayer(this.groundLayer);
     this.damage.setCollisionByExclusion([-1]); // refresh collisions
     this.matter.world.convertTilemapLayer(this.damage);
+    this.addBackButton()
   }
 
   addObjectsFromTiledMap() {
@@ -254,6 +251,18 @@ export default class Game extends Phaser.Scene {
           return;
         }
         this.scene.start("game", { number: this.number})
+      });
+    }
+
+    goBack() {
+      // close current scene and go back to the builder
+      this.cameras.main.fade(250, 0, 0, 0);
+      this.updateTries()
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        this.scene.stop("game");
+
+        this.scene.wake("game_builder"); // resumes AND triggers 'wake' event
+        this.scene.get("game_builder").data.set("customBricks", this.customBricks);
       });
     }
 

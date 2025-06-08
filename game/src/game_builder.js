@@ -30,6 +30,15 @@ export default class GameBuilder extends Phaser.Scene {
     preload () {
     }
 
+    resume(data) {
+      console.log("Resuming game_builder with data:", data);
+      if (data) {
+        this.customBricks = data.customBricks || [];
+        this.number = data.number || 'template';
+        // Refresh the scene state if needed
+      }
+    }
+
     create () {
       this.width = this.sys.game.config.width;
       this.height = this.sys.game.config.height;
@@ -59,6 +68,12 @@ export default class GameBuilder extends Phaser.Scene {
           this.buildPhaseText.destroy();
         }
       })
+
+      this.events.on("wake", () => {
+        const customBricks = this.data.get("customBricks");
+        console.log("Waking up game_builder with customBricks:", customBricks);
+        this.scene.restart({ customBricks, number: 'template' });
+      });
     }
 
     addPointer() {
@@ -324,6 +339,7 @@ export default class GameBuilder extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.sound.stopAll();
       if (this.theme) this.theme.stop();
+      this.scene.pause("game_builder")
       this.scene.start("game", { name: "STAGE", number: this.number, customBricks});
     },
       null,

@@ -43,6 +43,7 @@ export default class Bootloader extends Phaser.Scene {
         this.load.spritesheet("bat", "assets/images/bat.png", { frameWidth: 32, frameHeight: 32 });
         this.load.image("play", "assets/images/play.png");
         this.load.image("save", "assets/images/save.png");
+        this.load.image("back", "assets/images/back.png");
 
         Array(8).fill(0).forEach((_,i) => {
             this.load.tilemapTiledJSON(`scene${i}`,`assets/maps/scene${i}.json`)

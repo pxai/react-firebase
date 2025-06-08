@@ -94,7 +94,7 @@ export default class Ball {
             }, null, this)
         }
 
-        this.renderDebug()
+       // this.renderDebug()
     }
 
     renderDebug() {
