@@ -15,6 +15,7 @@ export default class Game extends Phaser.Scene {
       console.log("Init again! ", data)
       this.name = data.name;
       this.number = data.number;
+      this.customBricks = data.customBricks;
   }
 
     preload () {
@@ -41,11 +42,13 @@ export default class Game extends Phaser.Scene {
     }
 
     addBall(x, y) {
-      console.log("Add ball!")
       this.ball = new Ball(this, x, y);
     }
 
     addMap() {
+      if (this.customBricks.length > 1) {
+        this.number = 'template';
+      }
       this.map = this.make.tilemap({ key: `scene${this.number}` });
       const tileset = this.map.addTilesetImage("map", null, 32, 32, 0, 0); // 1px margin, 2px spacing
       this.groundLayer = this.map.createLayer(`scene${this.number}`, tileset);
@@ -54,39 +57,104 @@ export default class Game extends Phaser.Scene {
       this.groundLayer.setCollisionByExclusion([-1]);
       this.damage.setCollisionByExclusion([-1]);
 
-      //this.damageLayer.setCollisionByExclusion([-1]);
-      // this.platform.setCollisionByProperty({ collides: true });
       this.matter.world.convertTilemapLayer(this.groundLayer);
       this.matter.world.convertTilemapLayer(this.damage);
       this.rotatorGroup = this.matter.world.nextGroup();
       this.batGroup = this.matter.world.nextGroup();
 
+      if (this.number === 'template') {
+        this.addObjectsFromCustomBricks();
+      } else {
+        this.addObjectsFromTiledMap();
+      }
+  }
 
-      this.map.getObjectLayer("objects").objects.forEach(crateObject => {
-        const { x, y, width, height, name } = crateObject;
+  addObjectsFromCustomBricks() {
+    this.customBricks.forEach(createObject => {
+      const { x, y, width, height, name } = createObject;
 
-        if (name === "bat") {
-          new Bat(this, x, y)
-        }
+      if (name === "bat") {
+        new Bat(this, x, y)
+      }
 
-        if (name === "exit") {
-          this.exit = new Exit(this, x, y);
-        }
+      if (name === "bell") {
+        this.exit = new Exit(this, x, y);
+      }
 
-        if (name.startsWith("rotator")) {
-          const [_, size] = name.split(":");
-          this.exit = new Rotator(this, x, y, size);
-        }
+      if (name.startsWith("rotator")) {
+        const [_, size] = name.split(":");
+        this.exit = new Rotator(this, x, y, size);
+      }
 
-        if (name === "player") {
-          this.addBall(x, y);
-        }
-        // Tiled origin for its coordinate system is (0, 1), but we want coordinates relative to an
-        // origin of (0.5, 0.5)
-       // new Block(this, x + width / 2, y - height / 2)
-        //new Platform(this, x + Phaser.Math.Between(-128, 128), y)
-        // this.matter.add.image(x + width / 2, y - height / 2, "block").setBody({ shape: "rectangle", density: 0.001 });
-      });
+      if (name.startsWith("brick")) {
+        const spriteIndex = +name.replace("brick", "");
+        const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
+        const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
+
+                // Debug logs
+        console.log("groundLayer:", this.groundLayer);
+        console.log("tileX, tileY:", tileX, tileY);
+
+        const tileset = this.map.tilesets[0];
+        const tileIndex = tileset.firstgid; // Use first tile from the tileset
+        console.log("Using tile index:", tileIndex);
+
+        this.map.putTileAt(tileIndex, tileX, tileY, false, this.groundLayer);
+      }
+
+      if (name.startsWith("spike")) {
+        const spriteIndex = +name.replace("spike", "") + 4
+        const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
+        const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
+
+                // Debug logs
+        console.log("damage:", this.damage);
+        console.log("tileX, tileY:", tileX, tileY, spriteIndex);
+
+        const tileset = this.map.tilesets[0];
+        const tileIndex = tileset.firstgid; // Use first tile from the tileset
+        console.log("Using tile index:", tileset,  tileIndex);
+
+        this.map.putTileAt(tileIndex, tileX, tileY, false, this.damage);
+      }
+
+      if (name === "fireball") {
+        this.addBall(x, y);
+      }
+    });
+
+    this.groundLayer.setCollisionByExclusion([-1]); // refresh collisions
+    this.matter.world.convertTilemapLayer(this.groundLayer);
+    this.damage.setCollisionByExclusion([-1]); // refresh collisions
+    this.matter.world.convertTilemapLayer(this.damage);
+  }
+
+  addObjectsFromTiledMap() {
+    this.map.getObjectLayer("objects").objects.forEach(createObject => {
+      const { x, y, width, height, name } = createObject;
+
+      if (name === "bat") {
+        new Bat(this, x, y)
+      }
+
+      if (name === "exit") {
+        this.exit = new Exit(this, x, y);
+      }
+
+      if (name.startsWith("rotator")) {
+        const [_, size] = name.split(":");
+        this.exit = new Rotator(this, x, y, size);
+      }
+
+      if (name === "player") {
+        this.addBall(x, y);
+      }
+      // Tiled origin for its coordinate system is (0, 1), but we want coordinates relative to an
+      // origin of (0.5, 0.5)
+      // new Block(this, x + width / 2, y - height / 2)
+      //new Platform(this, x + Phaser.Math.Between(-128, 128), y)
+      // this.matter.add.image(x + width / 2, y - height / 2, "block").setBody({ shape: "rectangle", density: 0.001 });
+    });
   }
 
     addCollisions () {
@@ -180,12 +248,22 @@ export default class Game extends Phaser.Scene {
       this.cameras.main.shake(100);
       this.cameras.main.fade(250, 0, 0, 0);
       this.updateTries()
-      this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("game", { number: this.number}));
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        if (this.number === 'template') {
+          this.scene.start("game", { customBricks: this.customBricks });
+          return;
+        }
+        this.scene.start("game", { number: this.number})
+      });
     }
 
     finishScene () {
       this.cameras.main.fade(250, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
+        if (this.number === 'template') {
+          this.scene.start("game", { customBricks: this.customBricks });
+          return;
+        }
         this.number += 1;
         console.log("Number: ", this.number)
         if (this.number === 8)

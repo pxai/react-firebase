@@ -22,8 +22,8 @@ export default class Bootloader extends Phaser.Scene {
         this.load.on("complete", () => {
             const params = new URLSearchParams(window.location.search);
             const scene = params.get("builder") == "" ? "game_builder" : "game";
-
-            this.scene.start(scene, {number: 0});
+            const number = scene === 'game_builder' ? 'template' : 0;
+            this.scene.start(scene, {number});
         },this);
 
         this.load.image("fireball", "assets/images/fireball.png");
@@ -47,6 +47,8 @@ export default class Bootloader extends Phaser.Scene {
         Array(8).fill(0).forEach((_,i) => {
             this.load.tilemapTiledJSON(`scene${i}`,`assets/maps/scene${i}.json`)
         });
+
+        this.load.tilemapTiledJSON(`scenetemplate`,`assets/maps/scenetemplate.json`)
 
         Array(4).fill(0).forEach((_,i) => {
             this.load.image(`brick${i}`,`assets/images/brick${i}.png`)

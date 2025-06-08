@@ -44,6 +44,7 @@ export default class GameBuilder extends Phaser.Scene {
       this.addPointer();
       this.loadAudios();
       this.addPanel();
+      this.addUnselectButton()
       this.addStartButton();
       this.addSaveButton();
       //this.playMusic();
@@ -121,6 +122,12 @@ export default class GameBuilder extends Phaser.Scene {
       this.brickTypes.forEach( (brick, i) => {
         this.brickButtons[brick.name] = new BrickButton(this, x + (i * 48), y, brick).setOrigin(0.5).setScrollFactor(0)
       });
+    }
+
+    addUnselectButton () {
+      const x = (this.cameras.main.width / 2);
+      const y = (this.cameras.main.height - 50);
+      this.startButton = new SpriteButton(this, x - (6* 54), y, "play", "Unselect", this.startScene.bind(this));
     }
 
     addStartButton () {
