@@ -18,13 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The version comes from .nvmrc, so CI and local development cannot
+      # drift. `engines` in both package.json files plus engine-strict in
+      # .npmrc make a wrong version fail at install time with a clear message.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
             game/package-lock.json
+
+      - name: Show toolchain
+        run: node --version && npm --version
 
       - name: Install site dependencies
         run: npm ci

@@ -38,5 +38,9 @@
     "jest-transform-stub": "^2.0.0",
     "react-testing-library": "^8.0.1",
     "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=26.0.0",
+    "npm": ">=11.0.0"
   }
 }
