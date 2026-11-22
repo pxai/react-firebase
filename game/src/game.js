@@ -326,9 +326,14 @@ export default class Game extends Phaser.Scene {
         // Played straight from the site: there is no sleeping builder to wake,
         // and waking one that never started leaves a dead black canvas. Hand
         // control back to the page instead.
+        //
+        // This must NOT go to /save. A stage played from the site may belong to
+        // anybody, and /save is the editing screen — sending players there
+        // offered them an edit form for someone else's stage. The gallery is
+        // where they came from.
         if (this.standalone || !this.scene.isSleeping("game_builder")) {
           if (window.parent && window.parent !== window) {
-            window.parent.location.href = '/save';
+            window.parent.location.href = '/stages';
             return;
           }
         }

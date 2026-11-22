@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Save, SquarePen, FilePlus2, Pencil, CircleAlert, Loader2 } from 'lucide-react'
+import { Save, SquarePen, FilePlus2, Pencil, CircleAlert, Loader2, Lock, Play } from 'lucide-react'
 import './App.css'
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -22,6 +22,10 @@ const readDraft = () => {
 function SaveBuildPage() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
+  // Auth resolves asynchronously. Without this the page would decide you are
+  // not the owner before Firebase has said who you are, and flash a refusal at
+  // the actual author on every reload.
+  const [authReady, setAuthReady] = useState(false);
   // With an :id this page edits that stored stage; otherwise it saves the
   // stage the editor just handed over through localStorage.
   const [stage, setStage] = useState(null);
@@ -33,6 +37,7 @@ function SaveBuildPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setAuthReady(true);
     });
 
     return () => unsubscribe();
@@ -80,6 +85,15 @@ function SaveBuildPage() {
 
   const elementCount = stageElements(mapData).length;
 
+  // Only the author may edit a stored stage. A stage played from the gallery
+  // can belong to anybody, so without this check /save/<any id> handed out an
+  // edit form for someone else's stage — and to signed-out visitors too.
+  //
+  // This is the UX half only. Firestore rules are what actually prevent a
+  // write; see AGENTS.md.
+  const editingSomeoneElses = !!id && !!stage && (!user || stage.userId !== user.uid);
+  const settling = loading || (!!id && !authReady);
+
   return (
     <>
       <div className="page-head">
@@ -96,7 +110,7 @@ function SaveBuildPage() {
         </p>
       </div>
 
-      {loading && (
+      {settling && (
         <p className="hint">
           <Loader2 className="icon spin" aria-hidden="true" />{' '}Loading stage…
         </p>
@@ -108,7 +122,32 @@ function SaveBuildPage() {
         </p>
       )}
 
-      {!loading && !error && (
+      {!settling && !error && editingSomeoneElses && (
+        <div className="panel">
+          <div className="save-layout">
+            <StagePreview mapData={mapData} thumbnail={stage.thumbnail} />
+            <div>
+              <h2><Lock className="icon" aria-hidden="true" />{stage.name || 'This stage'}</h2>
+              <p className="status is-error">
+                <CircleAlert className="icon" aria-hidden="true" />
+                {user
+                  ? 'This stage belongs to another player, so it cannot be edited here.'
+                  : 'Only the author can edit a stage. Sign in from the top bar if it is yours.'}
+              </p>
+              <div className="actions">
+                <Link className="button-link" to={`/play/${id}`}>
+                  <Play className="icon" aria-hidden="true" />Play it instead
+                </Link>
+                <Link className="button-link ghost" to="/stages">
+                  Browse stages
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!settling && !error && !editingSomeoneElses && (
         <div className="panel">
           <div className="save-layout">
             {/* Drawn live, not from the stored thumbnail: this is the

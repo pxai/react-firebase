@@ -60,6 +60,14 @@ function AddStageForm({ mapData, stage, onSaved }) {
       return;
     }
 
+    // Only the author may change a stored stage. SaveBuildPage already refuses
+    // to render this form for someone else's stage; this is the second lock, so
+    // that a future page cannot reintroduce the hole by mounting the form.
+    if (editing && stage.userId && stage.userId !== user.uid) {
+      setStatus({ kind: "error", text: "This stage belongs to another player." });
+      return;
+    }
+
     setSaving(true);
     setStatus({ kind: "info", text: editing ? "Updating…" : "Saving…" });
 

@@ -211,6 +211,31 @@ Two things to know before trusting the numbers:
   cannot avoid that. If the numbers ever need to be trustworthy, the real fixes
   are Firebase App Check or moving the write behind a Cloud Function.
 
+### Who may edit a stage
+**Only the author.** `/save/:id` is the editing screen and it is reachable by
+URL, so it checks ownership itself:
+
+- `SaveBuildPage` computes `editingSomeoneElses` and renders a refusal with a
+  "play it instead" link rather than the form.
+- It waits for `authReady` before deciding. Auth resolves asynchronously, so
+  without that the page decides you are not the owner before Firebase has said
+  who you are, and flashes a refusal at the real author on every reload. There
+  is a test for exactly that.
+- `AddStageForm` refuses an update whose `stage.userId` is not the current uid,
+  as a second lock so a future page cannot reopen the hole by mounting the form.
+
+**These are UX only. Firestore rules are the actual enforcement** — a client
+check stops accidents, not a determined request. See the rules below.
+
+Two bugs that produced this, both worth not repeating:
+1. The in-game back button sent the hosting page to **`/save`** when a stage was
+   played standalone. A stage played from the gallery can belong to anybody, so
+   that offered every player — signed out included — an edit form for someone
+   else's stage. It now goes to `/stages`.
+2. Unifying `AddStageForm` and the old `EditStageForm` dropped the ownership
+   check that `EditStageForm` had (`data.userId !== currentUserId`). Nothing
+   replaced it until this was reported.
+
 ### Firestore rules these four collections need
 Not written to `firestore.rules` on purpose — see the landmines below — but this
 is the shape required:
@@ -677,6 +702,14 @@ replaced the stage layout with the description text. `AddStageForm` now handles
 both create and update. `AddStageForm` was also mounted on `HomePage` with no
 `mapData` at all, which stored stages with `mapData: undefined`; it is now only
 on the save page, which has a stage.
+
+### Jest and JSX
+`babel.config.cjs` sets `['@babel/preset-react', { runtime: 'automatic' }]` to
+match Vite's React plugin. Several components (`SaveBuildPage`, `BuildPage`,
+`AuthStatus`, `Logout`, `main`) have no `import React`, which is fine with the
+automatic runtime but threw **"React is not defined"** under Babel's classic
+default — and only when a test first touched the file, so it looked like a test
+bug rather than a config one. Leave the runtime on `automatic`.
 
 ## 6. Conventions
 
