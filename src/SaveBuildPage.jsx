@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Save, SquarePen, FilePlus2, Pencil, CircleAlert, Loader2 } from 'lucide-react'
 import './App.css'
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -82,7 +83,12 @@ function SaveBuildPage() {
   return (
     <>
       <div className="page-head">
-        <h1>{id ? "Edit stage" : "Save your stage"}</h1>
+        <h1>
+          {id
+            ? <SquarePen className="icon" aria-hidden="true" />
+            : <Save className="icon" aria-hidden="true" />}
+          {id ? "Edit stage" : "Save your stage"}
+        </h1>
         <p className="hint">
           {id
             ? "Rename it or change its description."
@@ -90,19 +96,34 @@ function SaveBuildPage() {
         </p>
       </div>
 
-      {loading && <p className="hint">Loading stage…</p>}
-      {error && <p className="status is-error">{error}</p>}
+      {loading && (
+        <p className="hint">
+          <Loader2 className="icon spin" aria-hidden="true" />{' '}Loading stage…
+        </p>
+      )}
+      {error && (
+        <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
+          {error}
+        </p>
+      )}
 
       {!loading && !error && (
         <div className="panel">
           <div className="save-layout">
+            {/* Drawn live, not from the stored thumbnail: this is the
+                stage you are about to save, so it must show what is on the
+                canvas now. */}
             <StagePreview
               mapData={mapData}
               caption={elementCount ? `${elementCount} element${elementCount === 1 ? "" : "s"}` : null}
             />
             <div>
               {!user && (
-                <p className="status is-error">Sign in from the top bar to save a stage.</p>
+                <p className="status is-error">
+                  <CircleAlert className="icon" aria-hidden="true" />
+                  Sign in from the top bar to save a stage.
+                </p>
               )}
               <AddStageForm
                 mapData={mapData}
@@ -119,9 +140,11 @@ function SaveBuildPage() {
       </div>
 
       <p className="hint">
-        <Link to="/build?continue=1">Keep editing this stage</Link>
+        <Link to="/build?continue=1">
+          <Pencil className="icon" aria-hidden="true" />Keep editing this stage
+        </Link>
         {" · "}
-        <Link to="/build">Start a new one</Link>
+        <Link to="/build"><FilePlus2 className="icon" aria-hidden="true" />Start a new one</Link>
       </p>
     </>
   )

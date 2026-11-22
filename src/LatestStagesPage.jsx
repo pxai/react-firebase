@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Sparkles, Play, Hammer, ArrowLeft, CircleAlert, Loader2, ImageOff } from 'lucide-react';
 import './App.css';
 import { db } from './firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -55,27 +56,35 @@ function LatestStagesPage() {
   return (
     <>
       <div className="page-head">
-        <h1>Latest stages</h1>
+        <h1><Sparkles className="icon" aria-hidden="true" />Latest stages</h1>
         <p className="hint">Made by players. Newest first.</p>
       </div>
 
-      {status === 'loading' && <p className="hint">Loading stages…</p>}
+      {status === 'loading' && (
+        <p className="hint">
+          <Loader2 className="icon spin" aria-hidden="true" />{' '}Loading stages…
+        </p>
+      )}
 
       {status === 'denied' && (
         <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
           These stages are not readable with the current Firestore rules.
         </p>
       )}
 
       {status === 'error' && (
-        <p className="status is-error">Could not load the latest stages.</p>
+        <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
+          Could not load the latest stages.
+        </p>
       )}
 
       {status === 'ready' && stages.length === 0 && (
         <div className="panel">
           <p className="empty">No stages have been shared yet.</p>
           <p className="hint" style={{ marginTop: '10px' }}>
-            <Link to="/build">Be the first to build one</Link>
+            <Link to="/build"><Hammer className="icon" aria-hidden="true" />Be the first to build one</Link>
           </p>
         </div>
       )}
@@ -87,7 +96,7 @@ function LatestStagesPage() {
 
             return (
               <li key={stage.id} className="stage-card">
-                <StagePreview mapData={stage.mapData} />
+                <StagePreview mapData={stage.mapData} thumbnail={stage.thumbnail} />
 
                 <div className="stage-card-body">
                   <span className="name">{stage.name || 'Untitled stage'}</span>
@@ -104,6 +113,9 @@ function LatestStagesPage() {
                   disabled={count === 0}
                   onClick={() => navigate(`/play/${stage.id}`)}
                 >
+                  {count === 0
+                    ? <ImageOff className="icon" aria-hidden="true" />
+                    : <Play className="icon" aria-hidden="true" />}
                   {count === 0 ? 'No layout' : 'Play'}
                 </button>
               </li>
@@ -113,9 +125,9 @@ function LatestStagesPage() {
       )}
 
       <p className="hint">
-        <Link to="/">Back to the game</Link>
+        <Link to="/"><ArrowLeft className="icon" aria-hidden="true" />Back to the game</Link>
         {' · '}
-        <Link to="/build">Build your own</Link>
+        <Link to="/build"><Hammer className="icon" aria-hidden="true" />Build your own</Link>
       </p>
     </>
   );

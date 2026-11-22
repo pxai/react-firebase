@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from "react-router-dom";
+import { Bell, Hammer } from 'lucide-react';
 import GoogleLogin from './GoogleLogin'
 import AuthStatus from './AuthStatus'
 import { auth } from "./firebase";
@@ -19,10 +20,12 @@ function NavBar () {
 
   return (
     <nav className="top-bar">
-      <div><Link to="/">TXOKAS.com</Link></div>
+      <div>
+        <Link to="/"><Bell className="icon" aria-hidden="true" />TXOKAS.com</Link>
+      </div>
         { !user
           ? <GoogleLogin />
-          : <><AuthStatus /> | <Link to="/build">Build</Link><Logout /></>
+          : <><AuthStatus /> | <Link to="/build"><Hammer className="icon" aria-hidden="true" />Build</Link><Logout /></>
         }
     </nav>
   )

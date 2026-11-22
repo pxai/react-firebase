@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Save, Tag, AlignLeft, Pencil, CircleAlert, CircleCheck, Loader2 } from "lucide-react";
 import { db, auth } from "./firebase";
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { DRAFT_KEY } from "../game/src/stage_io.js";
+import { thumbnailFor } from "./stageImage";
 
 // Saves the stage the editor just built, or updates one that already exists.
 //
@@ -61,6 +63,11 @@ function AddStageForm({ mapData, stage, onSaved }) {
     setSaving(true);
     setStatus({ kind: "info", text: editing ? "Updating…" : "Saving…" });
 
+    // A base64 PNG of the stage, stored on the document. Returns null rather
+    // than throwing if the sprites fail to load or the image comes out too
+    // large, so a thumbnail problem can never stop a stage being saved.
+    const thumbnail = await thumbnailFor(mapData);
+
     try {
       if (editing) {
         // mapData is deliberately included: editing a stage keeps whatever
@@ -69,6 +76,9 @@ function AddStageForm({ mapData, stage, onSaved }) {
           name: formData.name.trim(),
           description: formData.description,
           mapData,
+          // Only written when we have one, so a failed render leaves the
+          // existing thumbnail in place rather than blanking it.
+          ...(thumbnail ? { thumbnail } : {}),
           updatedAt: serverTimestamp(),
         });
       } else {
@@ -76,6 +86,7 @@ function AddStageForm({ mapData, stage, onSaved }) {
           name: formData.name.trim(),
           description: formData.description,
           mapData,
+          ...(thumbnail ? { thumbnail } : {}),
           userId: user.uid,
           userEmail: user.email,
           userName: user.displayName,
@@ -96,7 +107,9 @@ function AddStageForm({ mapData, stage, onSaved }) {
   return (
     <form onSubmit={handleSubmit}>
       <div className="field">
-        <label htmlFor="stage-name">Stage name</label>
+        <label htmlFor="stage-name">
+          <Tag className="icon" aria-hidden="true" />Stage name
+        </label>
         <input
           id="stage-name"
           type="text"
@@ -109,7 +122,9 @@ function AddStageForm({ mapData, stage, onSaved }) {
       </div>
 
       <div className="field">
-        <label htmlFor="stage-description">Description</label>
+        <label htmlFor="stage-description">
+          <AlignLeft className="icon" aria-hidden="true" />Description
+        </label>
         <textarea
           id="stage-description"
           name="description"
@@ -122,15 +137,22 @@ function AddStageForm({ mapData, stage, onSaved }) {
 
       <div className="actions">
         <button type="submit" className="primary" disabled={saving}>
+          {saving
+            ? <Loader2 className="icon spin" aria-hidden="true" />
+            : <Save className="icon" aria-hidden="true" />}
           {editing ? "Update stage" : "Save stage"}
         </button>
         <button type="button" onClick={openEditor}>
+          <Pencil className="icon" aria-hidden="true" />
           {editing ? "Open in the editor" : "Back to editing"}
         </button>
       </div>
 
       {status && (
         <p className={`status ${status.kind === "error" ? "is-error" : status.kind === "ok" ? "is-ok" : ""}`}>
+          {status.kind === "error" && <CircleAlert className="icon" aria-hidden="true" />}
+          {status.kind === "ok" && <CircleCheck className="icon" aria-hidden="true" />}
+          {status.kind === "info" && <Loader2 className="icon spin" aria-hidden="true" />}
           {status.text}
         </p>
       )}

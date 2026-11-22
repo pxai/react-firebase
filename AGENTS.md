@@ -171,6 +171,70 @@ scene was never started, and waking it leaves a dead black canvas. In that case
   mounted** in `App.jsx` or `NavBar.jsx` — there is no sign-in UI on the routes.
   Pages only *observe* auth via `onAuthStateChanged`.
 
+### Analytics collections
+Two write-only collections, both written from the client:
+
+**`stage_opens`** — one row each time a stage is opened to play (`/play/:id`,
+once the stage has actually loaded):
+
+    { stageId, openedAt, signedIn, userId? }
+
+**`stage_attempts`** — one row each time an attempt ends, and whether it was
+won. An attempt is one launch of the ball: a failure restarts the scene, so one
+scene instance is one attempt.
+
+    { stageId, completed, durationMs, endedAt, signedIn, userId? }
+
+How it gets there: the game has no Firebase and should keep it that way, so
+`game/src/telemetry.js` posts the outcome to the hosting page over
+**postMessage** and `src/analytics.js` writes it. `PlayPage` validates the
+message with `parseAttemptMessage` (origin check, channel check, shape check)
+and **takes the stage id from the route, never from the message** — the page
+already knows which stage it loaded.
+
+Only stages played by id are counted. The fixed training stages have no
+document to count against, so `Game.recordAttempt` returns early unless the
+scene is `standalone`. Counting those too would mean inventing synthetic ids.
+
+**Privacy.** A signed-in player's `uid` is attached so distinct players can be
+counted. **Nothing else about anybody is stored** — no email, no display name,
+not even for signed-in users. Anonymous players are still counted (otherwise
+most traffic would be invisible) but carry no identity at all; the `signedIn`
+boolean separates the two groups without identifying anyone. There is a test
+asserting the email and display name never reach the document.
+
+Two things to know before trusting the numbers:
+- `StrictMode` runs effects twice in development. `PlayPage` guards the open
+  with a ref, or every local open would be counted twice. Keep that guard.
+- These rules have to let **unauthenticated** clients create rows, which means
+  anyone can post arbitrary ones and inflate the counts. Client-side analytics
+  cannot avoid that. If the numbers ever need to be trustworthy, the real fixes
+  are Firebase App Check or moving the write behind a Cloud Function.
+
+### Firestore rules these four collections need
+Not written to `firestore.rules` on purpose — see the landmines below — but this
+is the shape required:
+
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /stages/{stage} {
+          allow read: if true;
+          allow create: if request.auth != null
+                        && request.auth.uid == request.resource.data.userId;
+          allow update, delete: if request.auth != null
+                        && request.auth.uid == resource.data.userId;
+        }
+        // Write-only from the client: read them from the console or an admin
+        // script, never from the site, or the uid list becomes public.
+        match /stage_opens/{row}    { allow create: if true; allow read, update, delete: if false; }
+        match /stage_attempts/{row} { allow create: if true; allow read, update, delete: if false; }
+      }
+    }
+
+`stages` needs public **read** because `/stages` lists everyone's stages and
+`/play/:id` loads one that may not be yours.
+
 ### ⚠️ Two deployment landmines
 
 1. **`firestore.rules` in this repo denies everything**
@@ -523,6 +587,83 @@ than appear last. It handles `permission-denied` separately from other errors,
 because that is exactly what restrictive Firestore rules look like from the
 client, and an empty gallery would otherwise look like "nobody has built
 anything".
+
+### Stage thumbnails (base64 PNG on the document)
+`src/stageImage.js` renders a stage to a PNG data URL on an offscreen canvas and
+`AddStageForm` stores it on the document as `thumbnail`. It is **not** a capture
+of the running game: it draws the stage from its `mapData` with the game's own
+sprites, so no Phaser instance has to boot and any stage can be imaged without
+playing it.
+
+Measured on the real sprites at 240x240 (`scripts/` has no copy of this; it was
+a one-off composite using Node's zlib):
+
+| stage | elements | PNG | base64 |
+|---|---|---|---|
+| typical hand-built | 17 | 1.0 KB | 1.4 KB |
+| busy | 60 | 1.2 KB | 1.6 KB |
+| every cell filled | 529 | 3.0 KB | 4.1 KB |
+
+So the worst case is **0.4% of Firestore's 1 MiB document limit**, and a
+24-stage gallery page carries under 100 KB of thumbnails. That is why base64 on
+the document is fine here and Firebase Storage is not needed — Storage would add
+a bucket, rules and CORS to manage, and would only start to pay off at much
+larger images or much longer lists, since a base64 field cannot be lazy-loaded
+or CDN-cached and rides along with every list query.
+
+Rules that keep it safe:
+- `MAX_THUMBNAIL_BYTES` (180 KB) is checked at runtime. Over it, the stage saves
+  **without** a thumbnail rather than failing.
+- `thumbnailFor()` never throws. A thumbnail must never stop a stage saving.
+- On update the field is only written when a new image was produced, so a failed
+  render leaves the old thumbnail rather than blanking it.
+- `StagePreview` takes an optional `thumbnail` and falls back to drawing the
+  stage live. **That fallback is why no migration is needed**: stages saved
+  before this existed simply render live, and get a thumbnail next time they are
+  saved.
+- The save page always draws live, never from the stored image — it must show
+  what is on the canvas right now.
+
+### Icons
+**`lucide-react`** (the Feather successor), used for every button, link, heading
+and status message. Chosen for size: `sideEffects: false` plus per-icon named
+exports means Vite tree-shakes it to only what is imported. Measured cost of 22
+icons: **+17.9 KB raw, +4.3 KB gzipped** (696.34 → 714.27 KB raw, 185.29 →
+189.55 KB gzipped), about 194 bytes gzipped per icon. The full set is thousands
+of icons and megabytes, so if the bundle ever jumps, something has broken
+tree-shaking — most likely a barrel file re-exporting them.
+
+Conventions:
+- Always `import { Play, Pencil } from 'lucide-react'` — named, direct. Never
+  `import * as icons`, and do not add a module that re-exports them.
+- Every icon gets `className="icon"` and `aria-hidden="true"`. They all sit
+  beside their own text label, so they are decorative and must not contribute
+  to the accessible name — the tests assert button names like `'Play'` exactly.
+- `.icon` is sized in `em`, so it tracks whatever text it sits beside. Buttons
+  and `.button-link` are `inline-flex` with a gap to keep icon and label on one
+  line.
+- A spinner is `<Loader2 className="icon spin" />`; `.spin` is disabled under
+  `prefers-reduced-motion`.
+
+The home page deliberately has **no page title**. The "Txokas / Hit the bell.
+Drag the ball back and let go." heading was removed: the game is the first thing
+on the page and speaks for itself.
+
+`src/stageLayout.js` holds the sprite catalogue and `stageElements()`, shared by
+the DOM preview and the canvas renderer so the two cannot drift.
+
+### The game page's white background
+`game/index.html` had **no doctype, `<head>` or `<body>`** — just a `<div>` and
+a `<script>`. The browser therefore built a quirks-mode document with the
+default white background *and* the default 8px body margin, which showed as a
+white frame around the canvas inside the site's iframe. That was the "ugly white
+background", and it was there on every page embedding the game.
+
+It is now a real document whose `html, body` are `#0e1b21` (the site's `--ink`)
+with no margin, and the Phaser config sets `backgroundColor` to the same value
+so neither the gutters nor any `Scale.FIT` letterboxing reads as a different
+surface. Remember this file is the game's vite entry point, so the built
+`public/game/index.html` inherits whatever it says.
 
 `MyStageList.jsx` gives each stage **Play / Edit / Delete**. Delete arms in
 place rather than calling `window.confirm`, which browsers can suppress. Edit

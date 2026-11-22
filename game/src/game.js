@@ -13,6 +13,7 @@ import {
   toTileY
 } from "./layout";
 import { parsePlacedName, ROTATOR_UNIT } from "./elements";
+import { reportAttempt } from "./telemetry";
 
 export default class Game extends Phaser.Scene {
     constructor () {
@@ -45,6 +46,10 @@ export default class Game extends Phaser.Scene {
       this.height = this.sys.game.config.height;
       this.center_width = this.width / 2;
       this.center_height = this.height / 2;
+      // One scene instance is one attempt: a failure restarts the scene, so
+      // create() runs again and the next attempt starts here.
+      this.attemptStartedAt = typeof performance !== 'undefined' ? performance.now() : null;
+      this.attemptReported = false;
       this.addPointer();
       this.addMap();
       this.addCollisions()
@@ -287,7 +292,16 @@ export default class Game extends Phaser.Scene {
 
     }
 
+    // Reported once per attempt, and only for a stage the site loaded by id:
+    // the fixed training stages have no document to count against.
+    recordAttempt (completed) {
+      if (!this.standalone || this.attemptReported) return;
+      this.attemptReported = true;
+      reportAttempt(completed, this.attemptStartedAt);
+    }
+
     restartScene() {
+      this.recordAttempt(false)
       this.playAudio("hit")
       this.cameras.main.shake(100);
       this.cameras.main.fade(250, 0, 0, 0);
@@ -326,6 +340,7 @@ export default class Game extends Phaser.Scene {
     }
 
     finishScene () {
+      this.recordAttempt(true)
       this.cameras.main.fade(250, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
         if (this.number === 'template') {

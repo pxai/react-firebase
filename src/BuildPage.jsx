@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { Hammer, MousePointerClick } from 'lucide-react';
 import './App.css'
 import MyStagesList from './MyStageList';
 import Game from './Game';
@@ -11,9 +12,13 @@ function BuildPage() {
   return (
     <>
       <div className="page-head">
-        <h1>{draft ? 'Keep building' : 'Build a stage'}</h1>
+        <h1>
+          <Hammer className="icon" aria-hidden="true" />
+          {draft ? 'Keep building' : 'Build a stage'}
+        </h1>
         <p className="hint">
-          Pick an element on the left, click to place it. Save, play or exit on the right.
+          <MousePointerClick className="icon" aria-hidden="true" />
+          {' '}Pick an element on the left, click to place it. Save, play or exit on the right.
         </p>
       </div>
 

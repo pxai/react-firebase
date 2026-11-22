@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Play, ArrowLeft, CircleAlert, Loader2 } from 'lucide-react';
 import './App.css';
 import { db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Game from './Game';
 import StagePreview from './StagePreview';
 import { PLAY_KEY } from '../game/src/stage_io.js';
+import { recordStageOpen, recordStageAttempt, parseAttemptMessage } from './analytics';
 
 // Plays a stored stage.
 //
@@ -52,30 +54,75 @@ function PlayPage() {
     return () => { cancelled = true; };
   }, [id]);
 
+  // One open per stage actually loaded. The ref is needed because StrictMode
+  // runs effects twice in development, which would double every count.
+  const opened = useRef(null);
+
+  useEffect(() => {
+    if (state.status !== 'ready' || opened.current === id) return;
+
+    opened.current = id;
+    recordStageOpen(id);
+  }, [id, state.status]);
+
+  // Attempts are reported by the game over postMessage, because the game has
+  // no Firebase of its own. The stage id comes from the route, never from the
+  // message.
+  useEffect(() => {
+    if (!id) return undefined;
+
+    const onMessage = (event) => {
+      const attempt = parseAttemptMessage(event, window.location.origin);
+      if (!attempt) return;
+
+      recordStageAttempt({ stageId: id, ...attempt });
+    };
+
+    window.addEventListener('message', onMessage);
+
+    return () => window.removeEventListener('message', onMessage);
+  }, [id]);
+
   const { status, stage } = state;
 
   return (
     <>
       <div className="page-head">
-        <h1>{stage?.name || 'Play stage'}</h1>
+        <h1>
+          <Play className="icon" aria-hidden="true" />
+          {stage?.name || 'Play stage'}
+        </h1>
         <p className="hint">
           {stage?.description || 'Drag the ball back and let go.'}
         </p>
       </div>
 
-      {status === 'loading' && <p className="hint">Loading stage…</p>}
+      {status === 'loading' && (
+        <p className="hint">
+          <Loader2 className="icon spin" aria-hidden="true" />{' '}Loading stage…
+        </p>
+      )}
 
       {status === 'missing' && (
-        <p className="status is-error">That stage no longer exists.</p>
+        <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
+          That stage no longer exists.
+        </p>
       )}
 
       {status === 'error' && (
-        <p className="status is-error">Could not load that stage.</p>
+        <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
+          Could not load that stage.
+        </p>
       )}
 
       {status === 'empty' && (
         <div className="panel">
-          <p className="status is-error">This stage has no layout saved.</p>
+          <p className="status is-error">
+            <CircleAlert className="icon" aria-hidden="true" />
+            This stage has no layout saved.
+          </p>
           <StagePreview mapData={null} size={260} />
         </div>
       )}
@@ -85,7 +132,7 @@ function PlayPage() {
       {status === 'ready' && <Game mode="play" />}
 
       <p className="hint">
-        <Link to="/save">Back to your stages</Link>
+        <Link to="/save"><ArrowLeft className="icon" aria-hidden="true" />Back to your stages</Link>
       </p>
     </>
   );

@@ -1,7 +1,47 @@
-<script type="module" crossorigin src="/game/assets/index-C04DGo1A.js"></script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Txokas</title>
+    <style>
+      /* This file had no doctype, head or body at all, so the browser built a
+       * quirks-mode document: default white background, and the default 8px
+       * body margin showing as a white frame around the canvas inside the
+       * site's iframe. Hence the "ugly white background".
+       *
+       * #0e1b21 is the site's --ink, so any letterboxing from Phaser.Scale.FIT
+       * blends into the page instead of framing the canvas. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #0e1b21;
+        overflow: hidden;
+      }
 
-<div id="container"
-  data-width="350"
-  data-height="768"
-  data-debug="true">
-</div>
+      #container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Phaser positions the canvas itself via Scale.CENTER_BOTH; this only
+       * stops the inline-element baseline gap under it. */
+      #container canvas {
+        display: block;
+      }
+    </style>
+    <script type="module" crossorigin src="/game/assets/index-BH1gTcok.js"></script>
+  </head>
+  <body>
+    <div id="container"
+      data-width="350"
+      data-height="768"
+      data-debug="true">
+    </div>
+  </body>
+</html>

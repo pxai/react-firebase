@@ -133,6 +133,14 @@
   image-rendering: pixelated;
 }
 
+/* The same class is used on an <img> when a stage has a stored thumbnail. */
+img.stage-preview {
+  display: block;
+  object-fit: contain;
+  /* The PNG already carries the sky and wall colours. */
+  background: var(--ink);
+}
+
 .stage-preview .wall {
   position: absolute;
   inset: 0;
@@ -161,6 +169,62 @@
   color: var(--text-dim);
   font-size: 0.8rem;
   text-align: center;
+}
+
+/* --- icons ----------------------------------------------------------------- */
+
+/* Lucide icons, sized in em so they track whatever text they sit beside.
+ * They are decorative (every one sits next to its own label), so each carries
+ * aria-hidden and contributes nothing to the accessible name. */
+.icon {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  vertical-align: -0.16em;
+}
+
+/* Anything with a label gets the icon on its line, not above it. */
+button,
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+h1 .icon,
+h2 .icon {
+  /* Headings use a larger optical size than their text. */
+  width: 1em;
+  height: 1em;
+  margin-right: 0.35em;
+  color: var(--sky);
+}
+
+.status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.status .icon {
+  margin-top: 0.18em;
+}
+
+.field label .icon {
+  margin-right: 0.35em;
+  color: var(--text-dim);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
 }
 
 /* --- home page ------------------------------------------------------------- */

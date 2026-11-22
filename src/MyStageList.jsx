@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Play, Pencil, Trash2, X, Layers, LogIn, CircleAlert, Loader2 } from "lucide-react";
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -63,14 +64,32 @@ function MyStageList() {
     }
   };
 
-  if (loading) return <p className="hint">Loading stages…</p>;
-  if (!user) return <p className="hint">Sign in to see your stages.</p>;
+  if (loading) {
+    return (
+      <p className="hint">
+        <Loader2 className="icon spin" aria-hidden="true" />{' '}Loading stages…
+      </p>
+    );
+  }
+
+  if (!user) {
+    return (
+      <p className="hint">
+        <LogIn className="icon" aria-hidden="true" />{' '}Sign in to see your stages.
+      </p>
+    );
+  }
 
   return (
     <div>
-      <h2>Your stages</h2>
+      <h2><Layers className="icon" aria-hidden="true" />Your stages</h2>
 
-      {error && <p className="status is-error">{error}</p>}
+      {error && (
+        <p className="status is-error">
+          <CircleAlert className="icon" aria-hidden="true" />
+          {error}
+        </p>
+      )}
 
       {stages.length === 0 ? (
         <p className="empty">No stages yet. Build one and save it.</p>
@@ -99,22 +118,25 @@ function MyStageList() {
                       onClick={() => handleDelete(stage.id)}
                       disabled={busy === stage.id}
                     >
+                      {busy === stage.id
+                        ? <Loader2 className="icon spin" aria-hidden="true" />
+                        : <Trash2 className="icon" aria-hidden="true" />}
                       {busy === stage.id ? "Deleting…" : "Yes, delete"}
                     </button>
                     <button type="button" onClick={() => setConfirming(null)}>
-                      Cancel
+                      <X className="icon" aria-hidden="true" />Cancel
                     </button>
                   </div>
                 ) : (
                   <div className="row-actions">
                     <button type="button" className="primary" onClick={() => navigate(`/play/${stage.id}`)}>
-                      Play
+                      <Play className="icon" aria-hidden="true" />Play
                     </button>
                     <button type="button" onClick={() => navigate(`/save/${stage.id}`)}>
-                      Edit
+                      <Pencil className="icon" aria-hidden="true" />Edit
                     </button>
                     <button type="button" className="danger" onClick={() => setConfirming(stage.id)}>
-                      Delete
+                      <Trash2 className="icon" aria-hidden="true" />Delete
                     </button>
                   </div>
                 )}

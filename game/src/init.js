@@ -25,6 +25,9 @@ const debugMode = gameContainer.dataset.debug === "true";
 const config = {
     width,
     height,
+    // Phaser's default is black, which showed as a hard edge against the
+    // site's dark background. This is the site's --ink.
+    backgroundColor: '#0e1b21',
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
