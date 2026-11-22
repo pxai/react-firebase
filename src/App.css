@@ -1,42 +1,323 @@
 #root {
-  max-width: 1280px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 2rem;
+  /* Clears the fixed top bar. */
+  padding: 58px 20px 0;
+  text-align: left;
+}
+
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.panel {
+  background: var(--ink-soft);
+  border: 1px solid var(--ink-line);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+/* --- the game frame -------------------------------------------------------- */
+
+/* The canvas is 1024x800 and letterboxes itself; this keeps the surround the
+ * same colour as the game instead of a bright page behind it. */
+.game-frame {
+  background: var(--ink);
+  border: 1px solid var(--ink-line);
+  border-radius: 12px;
+  padding: 8px;
+  margin: 0 auto 20px;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.game-frame iframe {
+  display: block;
+  border: none;
+  max-width: 100%;
+}
+
+/* --- save page ------------------------------------------------------------- */
+
+.save-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .save-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.status {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ink-line);
+  background: var(--ink);
+  font-size: 0.9rem;
+}
+
+.status.is-error {
+  border-color: var(--danger);
+  color: #ffd9cd;
+}
+
+.status.is-ok {
+  border-color: var(--ok);
+  color: #cdf3e0;
+}
+
+/* --- stage preview --------------------------------------------------------- */
+
+.stage-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--sky);
+  border-radius: 8px;
+  overflow: hidden;
+  /* The stage art is 32px pixel art shown small; keep it crisp. */
+  image-rendering: pixelated;
+}
+
+.stage-preview .wall {
+  position: absolute;
+  inset: 0;
+  /* The one-tile wall border every stage has: 1/25th of the map. */
+  border: 4% solid var(--sky-dim);
+  box-sizing: border-box;
+}
+
+.stage-preview .element {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+.stage-preview.is-empty {
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  border: 1px dashed var(--ink-line);
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.preview-caption {
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* --- home page ------------------------------------------------------------- */
+
+.home-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.home-links h2 {
+  margin-bottom: 2px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.home-links .actions {
+  margin-top: 0;
+}
+
+/* Real links (navigable, right-clickable) that look like the buttons. */
+.button-link {
+  display: inline-block;
+  padding: 0.5em 1.1em;
+  border-radius: 8px;
+  border: 1px solid var(--sky);
+  background: var(--sky);
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.button-link:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.button-link.ghost {
+  background: transparent;
+  border-color: var(--ink-line);
+  color: var(--text);
+}
+
+.button-link.ghost:hover {
+  background: var(--sky-dim);
+  border-color: var(--sky);
+  color: var(--text);
+}
+
+/* --- stage gallery (latest stages) ----------------------------------------- */
+
+.stage-gallery {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--ink-soft);
+  border: 1px solid var(--ink-line);
+  border-radius: 12px;
+}
+
+.stage-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Pushes the Play button to the bottom so cards line up. */
+  flex: 1;
+  min-width: 0;
+}
+
+.stage-card .name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.stage-card .sub {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- stage list ------------------------------------------------------------ */
+
+.stage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--ink);
+  border: 1px solid var(--ink-line);
+  border-radius: 10px;
+}
+
+.stage-row .meta {
+  min-width: 0;
+}
+
+.stage-row .name {
+  font-weight: 700;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.stage-row .sub {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.stage-row .row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stage-row button {
+  padding: 0.4em 0.85em;
+  font-size: 0.85rem;
+}
+
+.stage-row.is-confirming {
+  border-color: var(--danger);
+}
+
+.empty {
+  color: var(--text-dim);
+  margin: 0;
+}
+
+/* Kept: HomePage and SaveBuildPage still use this class name. */
+.read-the-docs {
+  color: var(--text-dim);
 }
 
 .card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  padding: 0;
 }

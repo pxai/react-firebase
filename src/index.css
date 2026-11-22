@@ -1,15 +1,31 @@
-html, body {
-  background-color: black;
-}
+/* Txokas theme.
+ *
+ * This file used to end with a `prefers-color-scheme: light` block that set
+ * :root to #ffffff with dark text. `:root` outranks the `html, body { black }`
+ * rule above it, so on any machine in light mode the whole site rendered white
+ * around the dark game canvas. The theme is now dark in both schemes, keyed to
+ * the game's own palette.
+ */
 
 :root {
+  /* The builder's camera background, and shades either side of it. */
+  --sky: #62a2bf;
+  --sky-dim: #3e6875;
+  --ink: #0e1b21;
+  --ink-soft: #15282f;
+  --ink-line: #24414c;
+  --text: #e8f1f5;
+  --text-dim: #9db4bd;
+  --accent: #ffd166;
+  --danger: #e4572e;
+  --ok: #4caf7d;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: dark;
+  color: var(--text);
+  background-color: var(--ink);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,88 +33,166 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+html,
+body {
+  background-color: var(--ink);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* Was `display: flex; place-items: center`, which centred #root as a flex
+   * item and fought the page layout. */
+  display: block;
+}
+
+a {
+  font-weight: 500;
+  color: var(--sky);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  margin: 0 0 0.6em;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+h2 {
+  font-size: 1.3rem;
+  color: var(--text);
 }
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
+  border: 1px solid var(--ink-line);
+  padding: 0.5em 1.1em;
+  font-size: 0.95rem;
+  font-weight: 600;
   font-family: inherit;
-  background-color: #1a1a1a;
+  color: var(--text);
+  background-color: var(--ink-soft);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
+
 button:hover {
-  border-color: #646cff;
+  border-color: var(--sky);
+  background-color: var(--sky-dim);
 }
-button:focus,
+
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
+button.primary {
+  background-color: var(--sky);
+  border-color: var(--sky);
+  color: var(--ink);
+}
+
+button.primary:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+button.danger:hover {
+  background-color: var(--danger);
+  border-color: var(--danger);
+  color: var(--text);
+}
+
+input,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6em 0.75em;
+  border-radius: 8px;
+  border: 1px solid var(--ink-line);
+  background-color: var(--ink);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--sky);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+/* --- top bar --------------------------------------------------------------- */
 
 .top-bar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 30px;
-  padding: 0 4px;
-  background-color: rgba(128, 128, 128, 0.8); /* semi-transparent grey */
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 12px;
+  background-color: rgba(14, 27, 33, 0.92);
+  border-bottom: 1px solid var(--ink-line);
+  backdrop-filter: blur(6px);
   z-index: 1000;
-  text-align: left;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
 }
 
-
-.top-bar a, .link-style {
+.top-bar a,
+.link-style {
   display: inline-block;
   background: none;
   border: none;
-  color: white;
+  color: var(--text);
   text-decoration: none;
   cursor: pointer;
   font-size: inherit;
-  font-weight: bolder;
+  font-weight: 700;
   padding: 0;
 }
 
-.top-bar a:hover, .link-style:hover {
+.top-bar a:hover,
+.link-style:hover {
+  color: var(--accent);
   text-decoration: underline;
+}
+
+footer {
+  margin-top: 2.5rem;
+  padding: 1.2rem 0 2rem;
+  border-top: 1px solid var(--ink-line);
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+footer p {
+  margin: 0 0 0.4em;
 }

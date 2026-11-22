@@ -4,6 +4,8 @@ import HomePage from "./HomePage";
 import AboutPage from "./AboutPage";
 import BuildPage from "./BuildPage";
 import SaveBuildPage from "./SaveBuildPage";
+import PlayPage from "./PlayPage";
+import LatestStagesPage from "./LatestStagesPage";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
 
@@ -15,6 +17,10 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/build" element={<BuildPage />} />
         <Route path="/save" element={<SaveBuildPage />} />
+        {/* The same page, editing a stage that is already stored. */}
+        <Route path="/save/:id" element={<SaveBuildPage />} />
+        <Route path="/play/:id" element={<PlayPage />} />
+        <Route path="/stages" element={<LatestStagesPage />} />
         <Route path="/about" element={<AboutPage />} />
       </Routes>
       <Footer />

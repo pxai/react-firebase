@@ -10,7 +10,14 @@ export default class Ball {
         this.fireball = this.scene.matter.add.sprite(x, y + 100, "fireball")//this.scene.matter.add.circle(150, 250, 16);
         this.fireball.setBounce(1)
         this.fireball.setScale(2)
-        this.spring = this.scene.matter.add.spring(this.body1, this.fireball, 40, 0.01);
+        // Stated explicitly rather than relied on: Matter only picks
+        // render.type 'spring' (the coil, instead of a straight line) because
+        // this stiffness is below 0.9. Raising the stiffness would silently
+        // turn the coil into a line. `visible` is what the renderer checks
+        // before drawing anything at all.
+        this.spring = this.scene.matter.add.spring(this.body1, this.fireball, 40, 0.01, {
+            render: { visible: true, type: 'spring', anchors: true }
+        });
         this.springSprite = scene.add.sprite((this.body1.x + this.fireball.x) / 2, (this.body1.y + this.fireball.y) / 2, "rotator");
 
        this.mouseSpring = this.scene.matter.add.mouseSpring();
@@ -87,30 +94,45 @@ export default class Ball {
             this.firing = true;
             this.scene.playAudio("fire")
             this.scene.matter.world.remove(this.body1)
-            if (this.graphics) this.graphics.destroy()
+            // Stop drawing the spring: the constraint object still exists after
+            // it leaves the world, so the coil would trail the flying ball.
+            this.showSpring = false;
+            if (this.graphics) {
+                this.graphics.destroy();
+                this.graphics = null;
+            }
             this.scene.time.delayedCall(100, () => {this.scene.matter.world.remove(this.spring)}, null, this)
             this.scene.time.delayedCall(3000, () => {
                 this.scene.restartScene()
             }, null, this)
         }
 
-       // this.renderDebug()
+        this.renderSpring();
     }
 
-    renderDebug() {
+    // Draws the spring between the anchor and the ball. This lives in the
+    // update loop because the constraint renderer paints a static picture of
+    // wherever the two bodies are right now.
+    //
+    // This was previously called renderDebug() and its only call site was
+    // commented out, so the spring was never visible in any stage. It also held
+    // a "pulled further than 220px and you die" rule that could never fire:
+    // springLength() returns undefined unless fireball.ready is set, and
+    // nothing ever sets it. That rule is deliberately NOT reinstated here —
+    // turning it on would change how the game plays, which is a separate call.
+    renderSpring() {
         if (!this.showSpring) return;
+
         if (!this.graphics) {
-          this.graphics = this.scene.add.graphics();
+            // Above the tilemap: created after the layers, so last in the
+            // display list.
+            this.graphics = this.scene.add.graphics();
         }
 
         this.graphics.clear();
-        if (this.springLength() > 220) {
-            this.dead = true;
-            this.showSpring = false;
-            this.scene.restartScene();
-            return;
-        }
-        this.scene.matter.world.renderConstraint(this.spring, this.graphics, 0xffffff, 4, 4, 4, 4, 1);
+        this.scene.matter.world.renderConstraint(
+            this.spring, this.graphics, 0xffffff, 1, 2, 4, 0xffffff, 3
+        );
       }
 
       springLength () {

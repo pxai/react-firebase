@@ -7,13 +7,19 @@ import Transition from "./transition";
 import Game from "./game";
 import PhaserMatterCollisionPlugin from "phaser-matter-collision-plugin";
 import { MatterGravityFixPlugin } from './matter_gravity_fix';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './layout';
 
 const gameContainer = document.getElementById("container");
-const DEFAULT_WIDTH = 800;
-const DEFAULT_HEIGHT = 800;
-const isMobile = window.innerWidth < 768;
-const width = isMobile ? window.innerWidth : DEFAULT_WIDTH;
-const height = isMobile ? window.innerHeight : DEFAULT_HEIGHT;
+// Fixed canvas size, scaled to fit whatever it is embedded in. It is wider
+// than the 800x800 map: the extra width is the two UI gutters either side of
+// the walls, which hold the editor's buttons. See layout.js.
+//
+// This used to size the canvas to window.innerWidth on narrow screens, which
+// left the 800px-wide map (and now the button columns) overflowing it. Letting
+// Phaser.Scale.FIT do the scaling keeps the whole playfield and both button
+// columns on screen at any size.
+const width = CANVAS_WIDTH;
+const height = CANVAS_HEIGHT;
 const debugMode = gameContainer.dataset.debug === "true";
 
 const config = {
@@ -54,26 +60,10 @@ const config = {
     ]
 };
 
-let game = new Phaser.Game(config);
-
-const resizeGame = () => {
-    const newWidth = window.innerWidth;
-    const newHeight = window.innerHeight;
-
-    // Destroy current game instance
-    game.destroy(true);
-
-    // Recreate the game with new width and height
-    game = new Phaser.Game({
-        width: newWidth,
-        height: newHeight,
-        scale: {
-            mode: Phaser.Scale.NONE, // Prevent automatic scaling
-            autoCenter: Phaser.Scale.CENTER_BOTH
-        },
-        ...config});
-};
-
-// Listen for window resize event
-window.addEventListener("resize", resizeGame);
+// Phaser.Scale.FIT rescales the canvas on resize by itself, so there is no
+// resize handler here. The old one destroyed and recreated the whole game on
+// every resize event, which threw away a stage in progress in the editor (and
+// did not actually resize anything: it spread `config` after width/height, so
+// the original values won).
+new Phaser.Game(config);
 

@@ -1,77 +1,140 @@
 import React, { useState } from "react";
-import { db } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { auth } from "./firebase";
+import { useNavigate } from "react-router-dom";
+import { db, auth } from "./firebase";
+import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { DRAFT_KEY } from "../game/src/stage_io.js";
 
-function AddStageForm({mapData}) {
-  const [formData, setFormData] = useState({ name: "", message: "", mapData });
-  const [status, setStatus] = useState("");
+// Saves the stage the editor just built, or updates one that already exists.
+//
+// This replaces the old EditStageForm, which was never mounted and whose
+// updateDoc wrote `mapData: stageData.description` — saving a stage through it
+// would have overwritten the layout with the description text.
+function AddStageForm({ mapData, stage, onSaved }) {
+  const navigate = useNavigate();
+  const editing = !!stage?.id;
+
+  const [formData, setFormData] = useState({
+    name: stage?.name || "",
+    description: stage?.description || "",
+  });
+  const [status, setStatus] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // The editor starts from the draft in localStorage, so hand this stage over
+  // before going there. For a stage just built this rewrites the same data; for
+  // a stored stage it is what makes "edit" open the stage rather than a blank
+  // canvas. Only ever called from the button, so viewing a stored stage does
+  // not quietly replace a draft in progress.
+  const openEditor = () => {
+    try {
+      if (mapData) window.localStorage.setItem(DRAFT_KEY, mapData);
+    } catch (error) {
+      console.warn("Could not hand the stage to the editor:", error);
+    }
+    navigate("/build?continue=1");
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("Sending...");
 
     const user = auth.currentUser;
-
     if (!user) {
-      setStatus("You must be logged in to submit.");
+      setStatus({ kind: "error", text: "You must be signed in to save a stage." });
       return;
     }
 
-    try {
-      await addDoc(collection(db, "stages"), {
-        name: formData.name,
-        stage: formData.stage,
-        mapData: formData.mapData,
-        userId: user.uid,
-        userEmail: user.email,
-        userName: user.displayName,
-        createdAt: serverTimestamp(),
-      });
+    if (!formData.name.trim()) {
+      setStatus({ kind: "error", text: "Give the stage a name." });
+      return;
+    }
 
-      setStatus("Message sent!");
-      setFormData({ name: "", message: "" });
+    if (!mapData) {
+      setStatus({ kind: "error", text: "There is no stage to save. Build one first." });
+      return;
+    }
+
+    setSaving(true);
+    setStatus({ kind: "info", text: editing ? "Updating…" : "Saving…" });
+
+    try {
+      if (editing) {
+        // mapData is deliberately included: editing a stage keeps whatever
+        // layout is on screen, which is the one being previewed.
+        await updateDoc(doc(db, "stages", stage.id), {
+          name: formData.name.trim(),
+          description: formData.description,
+          mapData,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, "stages"), {
+          name: formData.name.trim(),
+          description: formData.description,
+          mapData,
+          userId: user.uid,
+          userEmail: user.email,
+          userName: user.displayName,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      setStatus({ kind: "ok", text: editing ? "Stage updated." : "Stage saved." });
+      if (onSaved) onSaved();
     } catch (error) {
-      console.error("Error adding document:", error);
-      setStatus("Failed to send message.");
+      console.error("Error saving stage:", error);
+      setStatus({ kind: "error", text: "Could not save the stage. Please try again." });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div>
-    {!status &&
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Stage Name:</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Your name"
-          />
-        </div>
-        <div>
-          <label>Stage:</label>
-          <textarea
-            name="stage"
-            value={formData.stage}
-            onChange={handleChange}
-            placeholder="Your stage"
-          />
-        </div>
-        <button type="submit">Submit</button>
-      </form>
-      }
-      {status && <p>{status}</p>}
-      {status && <button onClick={() => setStatus("")}>Again</button>}
-    </div>
+    <form onSubmit={handleSubmit}>
+      <div className="field">
+        <label htmlFor="stage-name">Stage name</label>
+        <input
+          id="stage-name"
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Castle of doom"
+          maxLength={60}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="stage-description">Description</label>
+        <textarea
+          id="stage-description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="How should this stage be played?"
+          maxLength={400}
+        />
+      </div>
+
+      <div className="actions">
+        <button type="submit" className="primary" disabled={saving}>
+          {editing ? "Update stage" : "Save stage"}
+        </button>
+        <button type="button" onClick={openEditor}>
+          {editing ? "Open in the editor" : "Back to editing"}
+        </button>
+      </div>
+
+      {status && (
+        <p className={`status ${status.kind === "error" ? "is-error" : status.kind === "ok" ? "is-ok" : ""}`}>
+          {status.text}
+        </p>
+      )}
+    </form>
   );
 }
 

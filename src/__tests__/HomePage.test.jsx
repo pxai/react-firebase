@@ -1,79 +1,56 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import HomePage from '../HomePage';
-import { onAuthStateChanged } from 'firebase/auth';
 
-// Mock firebase auth and local firebase module
-jest.mock('firebase/auth', () => {
-  const originalModule = jest.requireActual('firebase/auth');
-  return {
-    ...originalModule,
-    onAuthStateChanged: jest.fn(),
-    getAuth: jest.fn(() => ({ currentUser: null })),
-  };
-});
+// HomePage no longer subscribes to auth or mounts AddStageForm. It had been
+// rendering that form with no stage to save, so submitting it stored a stage
+// with mapData: undefined. The form now lives on the save page, which has a
+// stage, and MyStageList handles its own auth.
+jest.mock('../firebase', () => ({ auth: {}, db: {} }));
+jest.mock('../Game', () => (props) => (
+  <div data-testid="game" data-mode={props.mode || 'play-fixed'} />
+));
+jest.mock('../MyStageList', () => () => <div>MyStagesList Mock</div>);
 
-jest.mock('../firebase', () => ({
-  auth: {
-    // Mock auth object properties if needed by onAuthStateChanged or component
-  },
-}));
-
-// Mock child components
-jest.mock('../Game', () => () => <div>Game Mock</div>);
-jest.mock('../AddStageForm', () => () => <div>AddStageForm Mock</div>);
-jest.mock('../MyStageList', () => () => <div>MyStagesList Mock</div>); // Corrected name
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>
+  );
 
 describe('HomePage', () => {
-  let mockAuthUnsubscribe;
+  test('renders the game and the stage list', () => {
+    renderPage();
 
-  beforeEach(() => {
-    onAuthStateChanged.mockClear();
-    mockAuthUnsubscribe = jest.fn();
-    onAuthStateChanged.mockImplementation((auth, callback) => {
-      callback(null); // Initial state: no user
-      return mockAuthUnsubscribe;
-    });
-  });
-
-  // Helper function to simulate auth state changes
-  const simulateAuthStateChange = (user) => {
-    const lastCall = onAuthStateChanged.mock.calls.length - 1;
-    if (onAuthStateChanged.mock.calls[lastCall]) {
-      const callback = onAuthStateChanged.mock.calls[lastCall][1];
-      callback(user);
-    }
-  };
-
-  test('renders Game and MyStagesList components', () => {
-    render(<HomePage />);
-    expect(screen.getByText('Game Mock')).toBeInTheDocument();
+    expect(screen.getByTestId('game')).toBeInTheDocument();
     expect(screen.getByText('MyStagesList Mock')).toBeInTheDocument();
   });
 
-  describe('when user is not logged in', () => {
-    test('does not render AddStageForm component', () => {
-      render(<HomePage />);
-      // User is null by default from beforeEach
-      expect(screen.queryByText('AddStageForm Mock')).not.toBeInTheDocument();
-    });
+  test('shows the fixed training stages, not the editor', () => {
+    renderPage();
+
+    expect(screen.getByTestId('game')).toHaveAttribute('data-mode', 'play-fixed');
   });
 
-  describe('when user is logged in', () => {
-    test('renders AddStageForm component', () => {
-      render(<HomePage />);
-      
-      act(() => {
-        simulateAuthStateChange({ uid: 'test-user' });
-      });
-      
-      expect(screen.getByText('AddStageForm Mock')).toBeInTheDocument();
-    });
+  test('links to the latest stages by other players', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: /play latest stages/i }))
+      .toHaveAttribute('href', '/stages');
   });
 
-  test('calls unsubscribe on unmount', () => {
-    const { unmount } = render(<HomePage />);
-    unmount();
-    expect(mockAuthUnsubscribe).toHaveBeenCalledTimes(1);
+  test('links to the editor', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: /build your own/i }))
+      .toHaveAttribute('href', '/build');
+  });
+
+  test('does not offer a save form with no stage to save', () => {
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /save stage/i })).not.toBeInTheDocument();
   });
 });

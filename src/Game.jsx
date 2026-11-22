@@ -1,16 +1,29 @@
 import React from 'react';
 
-export default function Game({mode}) {
-  const param = mode === "build" ? '?builder' : ''
-  console.log("Loading game as: ", mode, param)
+// The game, in a same-origin iframe. The query string tells the game's
+// bootloader which scene to start:
+//
+//   (none)           the fixed training stages
+//   ?builder         the stage editor, empty
+//   ?builder&draft   the stage editor, carrying on from the saved draft
+//   ?play            a stored stage the site put in localStorage
+const SEARCH = {
+  build: '?builder',
+  'build-draft': '?builder&draft',
+  play: '?play',
+};
+
+export default function Game({ mode, draft = false }) {
+  const key = mode === 'build' && draft ? 'build-draft' : mode;
+  const search = SEARCH[key] || '';
+
   return (
-    <div style={{ width: '100%', height: '100%', border: 'none' }}>
+    <div className="game-frame">
       <iframe
-        src={`/game/index.html${param}`}
+        src={`/game/index.html${search}`}
         title="txokas game"
-        width="1000px"
-        height="800px"
-        style={{ border: 'none' }}
+        width="1024"
+        height="800"
       />
     </div>
   );

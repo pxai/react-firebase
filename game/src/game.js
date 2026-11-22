@@ -3,6 +3,16 @@ import Exit from './exit';
 import Bat from './bat';
 import Rotator from './rotator';
 import SpriteButton from "./sprite_button";
+import MovingPlatform from "./moving_platform";
+import {
+  TILE,
+  LEFT_COLUMN_X,
+  MAP_OFFSET_X,
+  MAP_OFFSET_Y,
+  toTileX,
+  toTileY
+} from "./layout";
+import { parsePlacedName, ROTATOR_UNIT } from "./elements";
 
 export default class Game extends Phaser.Scene {
     constructor () {
@@ -16,7 +26,15 @@ export default class Game extends Phaser.Scene {
       console.log("Init again! ", data)
       this.name = data.name;
       this.number = data.number;
-      this.customBricks = data.customBricks;
+      // Most callers start this scene without customBricks: the bootloader
+      // (/game/ with no ?builder), the splash screen, and restart/finish on a
+      // fixed stage. addMap reads .length straight away, so default it rather
+      // than crashing with "Cannot read properties of undefined".
+      this.customBricks = data.customBricks || [];
+      // True when the site booted us straight into a stored stage (/play/:id)
+      // rather than the editor handing a stage over. There is then no builder
+      // scene to go back to.
+      this.standalone = !!data.standalone;
   }
 
     preload () {
@@ -47,13 +65,19 @@ export default class Game extends Phaser.Scene {
     }
 
     addMap() {
-      if (this.customBricks.length > 1) {
+      // Any custom stage uses the blank template map. This was `length > 1`,
+      // which left this.number undefined for a one-element stage and asked the
+      // cache for a tilemap called "sceneundefined".
+      if (this.customBricks.length) {
         this.number = 'template';
+      } else if (this.number === undefined || this.number === null) {
+        this.number = 0;
       }
       this.map = this.make.tilemap({ key: `scene${this.number}` });
       const tileset = this.map.addTilesetImage("map", null, 32, 32, 0, 0); // 1px margin, 2px spacing
-      this.groundLayer = this.map.createLayer(`scene${this.number}`, tileset);
-      this.damage = this.map.createLayer("damage", tileset);
+      // Same offset as the editor, so a stage plays where it was built.
+      this.groundLayer = this.map.createLayer(`scene${this.number}`, tileset, MAP_OFFSET_X, MAP_OFFSET_Y);
+      this.damage = this.map.createLayer("damage", tileset, MAP_OFFSET_X, MAP_OFFSET_Y);
 
       this.groundLayer.setCollisionByExclusion([-1]);
       this.damage.setCollisionByExclusion([-1]);
@@ -71,7 +95,9 @@ export default class Game extends Phaser.Scene {
   }
 
   addBackButton () {
-    this.startButton = new SpriteButton(this, 0, 0, "back", "Go back", this.goBack.bind(this));
+    this.startButton = new SpriteButton(
+      this, LEFT_COLUMN_X, 48, "back", "Go back", this.goBack.bind(this), { tooltipSide: "right" }
+    );
   }
 
   addObjectsFromCustomBricks() {
@@ -88,14 +114,24 @@ export default class Game extends Phaser.Scene {
       }
 
       if (name.startsWith("rotator")) {
-        const [_, size] = name.split(":");
-        this.exit = new Rotator(this, x, y, size);
+        // The editor stores a sprite count; Rotator measures its length in
+        // 64px units, hence the conversion. It is also centre-origin while the
+        // editor stores the top-left corner, so offset it by half its width to
+        // land where it was placed.
+        const { width } = parsePlacedName(name);
+        new Rotator(this, x + (width / 2), y + (TILE / 2), width / ROTATOR_UNIT);
+      }
+
+      // Sliding platforms: platform_h slides left/right, platform_v up/down.
+      if (name.startsWith("platform_")) {
+        const { axis, tiles, vertical } = parsePlacedName(name);
+        new MovingPlatform(this, x, y, { axis, tiles, vertical });
       }
 
       if (name.startsWith("brick")) {
         const spriteIndex = +name.replace("brick", "");
-        const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
-        const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
+        const tileX = toTileX(x); // Canvas position -> tile coordinates in the layer
+        const tileY = toTileY(y);
 
         const tileset = this.map.tilesets[0];
         const tileIndex = tileset.firstgid + (spriteIndex ); // Use first tile from the tileset
@@ -105,8 +141,8 @@ export default class Game extends Phaser.Scene {
 
       if (name.startsWith("spike")) {
         const spriteIndex = +name.replace("spike", "") + 4
-        const tileX = Math.floor(x / 32); // Convert x position to tile coordinates
-        const tileY = Math.floor(y / 32); // Convert y position to tile coordinates
+        const tileX = toTileX(x); // Canvas position -> tile coordinates in the layer
+        const tileY = toTileY(y);
 
         const tileset = this.map.tilesets[0];
         const tileIndex = tileset.firstgid + (spriteIndex ); // Use first tile from the tileset plus the sprite index
@@ -128,7 +164,10 @@ export default class Game extends Phaser.Scene {
 
   addObjectsFromTiledMap() {
     this.map.getObjectLayer("objects").objects.forEach(createObject => {
-      const { x, y, width, height, name } = createObject;
+      const { width, height, name } = createObject;
+      // Tiled coordinates are relative to the map; the map is drawn offset.
+      const x = createObject.x + MAP_OFFSET_X;
+      const y = createObject.y + MAP_OFFSET_Y;
 
       if (name === "bat") {
         new Bat(this, x, y)
@@ -155,6 +194,14 @@ export default class Game extends Phaser.Scene {
   }
 
     addCollisions () {
+      // A custom stage with no fireball placed has no ball, and there is then
+      // nothing to attach collisions to. The editor stops you playing such a
+      // stage, but do not crash the whole scene if one gets here anyway.
+      if (!this.ball) {
+        console.warn("No ball in this stage: skipping ball collisions.");
+        return;
+      }
+
       this.unsubscribePlayerCollide = this.matterCollision.addOnCollideStart({
         objectA: this.ball.fireball,
         callback: this.onPlayerCollide,
@@ -247,7 +294,11 @@ export default class Game extends Phaser.Scene {
       this.updateTries()
       this.cameras.main.once("camerafadeoutcomplete", () => {
         if (this.number === 'template') {
-          this.scene.start("game", { customBricks: this.customBricks });
+          this.scene.start("game", {
+            number: 'template',
+            customBricks: this.customBricks,
+            standalone: this.standalone
+          });
           return;
         }
         this.scene.start("game", { number: this.number})
@@ -255,12 +306,20 @@ export default class Game extends Phaser.Scene {
     }
 
     goBack() {
-      // close current scene and go back to the builder
       this.cameras.main.fade(250, 0, 0, 0);
       this.updateTries()
       this.cameras.main.once("camerafadeoutcomplete", () => {
-        this.scene.stop("game");
+        // Played straight from the site: there is no sleeping builder to wake,
+        // and waking one that never started leaves a dead black canvas. Hand
+        // control back to the page instead.
+        if (this.standalone || !this.scene.isSleeping("game_builder")) {
+          if (window.parent && window.parent !== window) {
+            window.parent.location.href = '/save';
+            return;
+          }
+        }
 
+        this.scene.stop("game");
         this.scene.wake("game_builder"); // resumes AND triggers 'wake' event
         this.scene.get("game_builder").data.set("customBricks", this.customBricks);
       });
@@ -270,7 +329,11 @@ export default class Game extends Phaser.Scene {
       this.cameras.main.fade(250, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
         if (this.number === 'template') {
-          this.scene.start("game", { customBricks: this.customBricks });
+          this.scene.start("game", {
+            number: 'template',
+            customBricks: this.customBricks,
+            standalone: this.standalone
+          });
           return;
         }
         this.number += 1;

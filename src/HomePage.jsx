@@ -1,29 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import './App.css'
-import { auth } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import AddStageForm from './AddStageForm';
 import MyStagesList from './MyStageList';
 import Game from './Game';
 
 function HomePage() {
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   return (
     <>
-      <Game />
-      <div className="card">
-        {user && <AddStageForm />}
+      <div className="page-head">
+        <h1>Txokas</h1>
+        <p className="hint">Hit the bell. Drag the ball back and let go.</p>
       </div>
-      <div className="read-the-docs">
+
+      {/* The demo: the fixed training stages. */}
+      <Game />
+
+      <div className="panel home-links">
+        <div>
+          <h2>Stages by players</h2>
+          <p className="hint">Play the newest stages people have built.</p>
+        </div>
+        <div className="actions">
+          <Link className="button-link" to="/stages">Play latest stages</Link>
+          <Link className="button-link ghost" to="/build">Build your own</Link>
+        </div>
+      </div>
+
+      <div className="panel">
         <MyStagesList />
       </div>
     </>
